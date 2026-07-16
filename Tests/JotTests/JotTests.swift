@@ -1,7 +1,7 @@
 import XCTest
-@testable import ShelfNote
+@testable import Jot
 
-final class ShelfNoteTests: XCTestCase {
+final class JotTests: XCTestCase {
     func testPinnedQueryFiltersAndOrdersNewestFirst() {
         let early = Note(text: "Early", project: Project.tasks.rawValue, isPinned: true, createdAt: .distantPast)
         let unpinned = Note(text: "Unpinned", project: Project.tasks.rawValue, createdAt: .now)

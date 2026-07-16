@@ -3,13 +3,13 @@ import SwiftData
 import SwiftUI
 
 @main
-struct ShelfNoteApp: App {
+struct JotApp: App {
     private let modelContainer: ModelContainer
 
     init() {
         do {
             // ponytail: local persistence is the first release ceiling; switch to
-            // `.private("iCloud.your-team.ShelfNote")` after enabling the entitlement.
+            // `.private("iCloud.your-team.Jot")` after enabling the entitlement.
             let configuration = ModelConfiguration(cloudKitDatabase: .none)
             modelContainer = try ModelContainer(for: Note.self, configurations: configuration)
         } catch {
@@ -19,7 +19,7 @@ struct ShelfNoteApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ShelfView()
+            JotView()
                 .frame(minWidth: 1_080, minHeight: 720)
                 .preferredColorScheme(.light)
         }
@@ -28,7 +28,7 @@ struct ShelfNoteApp: App {
     }
 }
 
-struct ShelfView: View {
+struct JotView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
 

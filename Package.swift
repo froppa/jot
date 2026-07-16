@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "ShelfNote",
+    name: "Jot",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "ShelfNote", targets: ["ShelfNote"])
+        .executable(name: "Jot", targets: ["Jot"])
     ],
     targets: [
-        .executableTarget(name: "ShelfNote"),
-        .testTarget(name: "ShelfNoteTests", dependencies: ["ShelfNote"])
+        .executableTarget(name: "Jot"),
+        .testTarget(name: "JotTests", dependencies: ["Jot"])
     ]
 )

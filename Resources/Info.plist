@@ -5,11 +5,11 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>ShelfNote</string>
+    <string>Jot</string>
     <key>CFBundleIdentifier</key>
-    <string>com.example.ShelfNote</string>
+    <string>com.example.Jot</string>
     <key>CFBundleName</key>
-    <string>ShelfNote</string>
+    <string>Jot</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
