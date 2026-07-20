@@ -1,0 +1,19 @@
+[settings]
+task.run_auto_install = false
+
+[tasks.setup]
+description = "Verify the Xcode Swift toolchain required by SwiftData"
+run = "xcodebuild -version"
+
+[tasks.test]
+description = "Run the Swift test suite"
+run = "swift test"
+
+[tasks.build]
+description = "Build a release Jot.app bundle"
+run = "scripts/build-app.sh"
+
+[tasks.run]
+description = "Build and open Jot"
+depends = ["build"]
+run = "open .build/Jot.app"

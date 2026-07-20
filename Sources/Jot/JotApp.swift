@@ -32,11 +32,12 @@ struct JotView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
 
-    @State private var selectedProject: Project = .pinned
+    @State private var selectedProject: Project = .inbox
     @State private var draft = ""
-    @State private var reminderChoice: ReminderChoice = .none
-    @State private var color: NoteColor = .indigo
     @State private var search = ""
+    @State private var editingNote: Note?
+    @State private var noteToDelete: Note?
+    @FocusState private var isCaptureFocused: Bool
 
     private var visibleNotes: [Note] {
         let scoped = NoteQuery.visible(notes, in: selectedProject)
@@ -52,11 +53,50 @@ struct JotView: View {
             mainContent
         }
         .background(Color(red: 0.985, green: 0.985, blue: 0.99))
-        .onAppear(perform: seedIfNeeded)
+        .task {
+            isCaptureFocused = true
+        }
+        .sheet(isPresented: Binding(
+            get: { editingNote != nil },
+            set: { if !$0 { editingNote = nil } }
+        )) {
+            if let note = editingNote {
+                EditNoteSheet(
+                    note: note,
+                    requestDelete: {
+                        editingNote = nil
+                        noteToDelete = note
+                    }
+                )
+            }
+        }
+        .confirmationDialog(
+            "Delete this note?",
+            isPresented: Binding(
+                get: { noteToDelete != nil },
+                set: { if !$0 { noteToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let noteToDelete {
+                    delete(noteToDelete)
+                    self.noteToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                noteToDelete = nil
+            }
+        } message: {
+            Text("This can’t be undone.")
+        }
     }
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Text("Jot")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                 TextField("Search notes", text: $search)
@@ -65,13 +105,21 @@ struct JotView: View {
             .padding(11)
             .background(.white, in: RoundedRectangle(cornerRadius: 10))
 
-            Text("CAPTURE")
+            SidebarRow(
+                project: .inbox,
+                count: NoteQuery.visible(notes, in: .inbox).count,
+                isSelected: selectedProject == .inbox
+            ) {
+                selectedProject = .inbox
+            }
+
+            Text("CATEGORIES")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
 
             VStack(spacing: 4) {
-                ForEach(Project.allCases) { project in
+                ForEach([Project.notes, .ideas, .tasks, .readLater]) { project in
                     SidebarRow(
                         project: project,
                         count: NoteQuery.visible(notes, in: project).count,
@@ -82,14 +130,15 @@ struct JotView: View {
                 }
             }
 
-            Spacer()
+            SidebarRow(
+                project: .pinned,
+                count: NoteQuery.visible(notes, in: .pinned).count,
+                isSelected: selectedProject == .pinned
+            ) {
+                selectedProject = .pinned
+            }
 
-            Label("Local store", systemImage: "externaldrive.fill")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("iCloud-ready")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Spacer()
         }
         .padding(20)
         .background(Color(red: 0.96, green: 0.97, blue: 0.99))
@@ -104,83 +153,69 @@ struct JotView: View {
                     Text("\(visibleNotes.count) note\(visibleNotes.count == 1 ? "" : "s")")
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
-                Menu {
-                    Picker("Note color", selection: $color) {
-                        ForEach(NoteColor.allCases) { color in
-                            Text(color.rawValue.capitalized).tag(color)
-                        }
-                    }
-                } label: {
-                    Label("Style", systemImage: "paintpalette")
-                }
             }
 
+            composer
+
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 18)], spacing: 18) {
-                    ForEach(visibleNotes, id: \.id) { note in
-                        NoteCard(note: note, togglePin: { togglePin(note) }, delete: { delete(note) })
+                Group {
+                    if visibleNotes.isEmpty {
+                        ContentUnavailableView {
+                            Label(emptyTitle, systemImage: selectedProject == .inbox ? "tray" : "note.text")
+                        } description: {
+                            Text(emptyDescription)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 320)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(visibleNotes, id: \.id) { note in
+                                NoteCard(
+                                    note: note,
+                                    edit: { editingNote = note },
+                                    togglePin: { togglePin(note) },
+                                    requestDelete: { noteToDelete = note }
+                                )
+                            }
+                        }
                     }
                 }
                 .padding(.vertical, 4)
             }
-
-            composer
         }
         .padding(30)
     }
 
     private var composer: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("Quick note… anything on your mind?", text: $draft, axis: .vertical)
+        HStack(alignment: .bottom, spacing: 12) {
+            TextField("Write a note…", text: $draft, axis: .vertical)
                 .textFieldStyle(.plain)
-                .lineLimit(2...4)
+                .lineLimit(1...4)
                 .font(.title3)
+                .focused($isCaptureFocused)
 
-            HStack {
-                Picker("Reminder", selection: $reminderChoice) {
-                    ForEach(ReminderChoice.allCases) { choice in
-                        Text(choice.label).tag(choice)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 170)
-
-                Picker("Color", selection: $color) {
-                    ForEach(NoteColor.allCases) { option in
-                        Circle().fill(NotePalette.color(for: option)).frame(width: 10, height: 10).tag(option)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-
-                Spacer()
-
-                Button(action: addNote) {
-                    Label("Add Note", systemImage: "plus")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button(action: addNote) {
+                Label("Capture", systemImage: "tray.and.arrow.down")
             }
+            .keyboardShortcut(.return, modifiers: [.command])
+            .buttonStyle(.borderedProminent)
+            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(18)
         .background(.white, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func addNote() {
-        let target = selectedProject.canCreateNotes ? selectedProject : .inbox
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
         let note = Note(
-            text: draft.trimmingCharacters(in: .whitespacesAndNewlines),
-            project: target.rawValue,
-            isPinned: selectedProject == .pinned,
-            reminderAt: reminderChoice.date,
-            colorName: color.rawValue
+            text: text,
+            project: Project.inbox.rawValue
         )
         modelContext.insert(note)
-        ReminderScheduler.schedule(for: note)
         draft = ""
-        reminderChoice = .none
+        selectedProject = .inbox
+        isCaptureFocused = true
     }
 
     private func togglePin(_ note: Note) {
@@ -192,19 +227,21 @@ struct JotView: View {
         modelContext.delete(note)
     }
 
-    private func seedIfNeeded() {
-        guard notes.isEmpty else { return }
-        let examples: [(String, Project, Bool, NoteColor)] = [
-            ("Ship first note\nKeep the capture flow fast and out of the way.", .inbox, true, .indigo),
-            ("Call with Mom\nFollow up with the doctor after work.", .tasks, true, .coral),
-            ("Weekend hike ideas\nCascade Lake or Tolmie Peak. Pack water and layers.", .ideas, true, .citrus),
-            ("Read: Atomic Habits\nCapture one useful takeaway from chapter three.", .readLater, true, .mint),
-            ("Meeting notes\nDecide the next action before closing the note.", .notes, true, .sky),
-            ("Plan next bike tune-up\nReplace chain and book shop time this week.", .tasks, true, .lavender)
-        ]
-        for (text, project, pinned, noteColor) in examples {
-            modelContext.insert(Note(text: text, project: project.rawValue, isPinned: pinned, colorName: noteColor.rawValue))
+    private var emptyTitle: String {
+        search.isEmpty ? "No notes in \(selectedProject.rawValue)" : "No matching notes"
+    }
+
+    private var emptyDescription: String {
+        if !search.isEmpty {
+            return "Try a different search."
         }
+        if selectedProject == .inbox {
+            return "Capture a note above."
+        }
+        if selectedProject == .pinned {
+            return "Pin notes to see them here."
+        }
+        return "Move notes here when you edit them."
     }
 }
 
@@ -246,8 +283,9 @@ private struct SidebarRow: View {
 
 private struct NoteCard: View {
     let note: Note
+    let edit: () -> Void
     let togglePin: () -> Void
-    let delete: () -> Void
+    let requestDelete: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -256,11 +294,15 @@ private struct NoteCard: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
                 Spacer()
+                Button(action: edit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .buttonStyle(.borderless)
                 Menu {
                     Button(note.isPinned ? "Unpin" : "Pin", action: togglePin)
-                    Button("Delete", role: .destructive, action: delete)
+                    Button("Delete", role: .destructive, action: requestDelete)
                 } label: {
-                    Image(systemName: note.isPinned ? "pin.fill" : "ellipsis")
+                    Image(systemName: "ellipsis.circle")
                 }
                 .menuStyle(.borderlessButton)
             }
@@ -268,12 +310,12 @@ private struct NoteCard: View {
             Text(note.title)
                 .font(.title3.weight(.bold))
                 .lineLimit(2)
-            Text(note.preview)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer(minLength: 0)
+            if !note.preview.isEmpty {
+                Text(note.preview)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             HStack {
                 if let reminder = note.reminderAt {
@@ -290,50 +332,75 @@ private struct NoteCard: View {
             .foregroundStyle(.secondary)
         }
         .padding(18)
-        .frame(minHeight: 220, alignment: .topLeading)
-        .background(NotePalette.color(for: NoteColor(rawValue: note.colorName) ?? .indigo).opacity(0.16), in: RoundedRectangle(cornerRadius: 14))
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(.white, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
-                .stroke(NotePalette.color(for: NoteColor(rawValue: note.colorName) ?? .indigo).opacity(0.38), lineWidth: 1)
+                .stroke(.black.opacity(0.08), lineWidth: 1)
         }
     }
 }
 
-private enum NotePalette {
-    static func color(for color: NoteColor) -> Color {
-        switch color {
-        case .indigo: Color(red: 0.25, green: 0.36, blue: 0.92)
-        case .coral: Color(red: 0.91, green: 0.28, blue: 0.29)
-        case .citrus: Color(red: 0.78, green: 0.49, blue: 0.03)
-        case .mint: Color(red: 0.08, green: 0.52, blue: 0.33)
-        case .sky: Color(red: 0.17, green: 0.51, blue: 0.87)
-        case .lavender: Color(red: 0.48, green: 0.33, blue: 0.82)
-        }
-    }
-}
+private struct EditNoteSheet: View {
+    let note: Note
+    let requestDelete: () -> Void
 
-private enum ReminderChoice: String, CaseIterable, Identifiable {
-    case none, inOneHour, tomorrowMorning
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+    @State private var project: Project
+    @State private var isPinned: Bool
 
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .none: "No reminder"
-        case .inOneHour: "In one hour"
-        case .tomorrowMorning: "Tomorrow 9 AM"
-        }
+    init(note: Note, requestDelete: @escaping () -> Void) {
+        self.note = note
+        self.requestDelete = requestDelete
+        _text = State(initialValue: note.text)
+        _project = State(initialValue: Project(rawValue: note.project) ?? .inbox)
+        _isPinned = State(initialValue: note.isPinned)
     }
 
-    var date: Date? {
-        switch self {
-        case .none:
-            return nil
-        case .inOneHour:
-            return Calendar.current.date(byAdding: .hour, value: 1, to: .now)
-        case .tomorrowMorning:
-            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
-            return Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Edit note")
+                .font(.title2.weight(.bold))
+
+            TextField("Write a note", text: $text, axis: .vertical)
+                .lineLimit(5...12)
+                .textFieldStyle(.roundedBorder)
+
+            Picker("Category", selection: $project) {
+                ForEach(Project.allCases.filter(\.canCreateNotes)) { option in
+                    Text(option.rawValue).tag(option)
+                }
+            }
+
+            Toggle("Keep pinned", isOn: $isPinned)
+
+            Spacer()
+
+            HStack {
+                Button("Delete", role: .destructive) {
+                    requestDelete()
+                    dismiss()
+                }
+                Spacer()
+                Button("Cancel") {
+                    dismiss()
+                }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save", action: save)
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
         }
+        .padding(24)
+        .frame(minWidth: 460, minHeight: 350)
+    }
+
+    private func save() {
+        note.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        note.project = project.rawValue
+        note.isPinned = isPinned
+        dismiss()
     }
 }

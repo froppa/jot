@@ -35,7 +35,7 @@ final class Note {
 
     var preview: String {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: true)
-        guard lines.count > 1 else { return "Capture the detail before it slips away." }
+        guard lines.count > 1 else { return "" }
         return String(lines.dropFirst().joined(separator: " ").prefix(110))
     }
 }
@@ -47,12 +47,12 @@ enum NoteColor: String, CaseIterable, Identifiable {
 }
 
 enum Project: String, CaseIterable, Identifiable {
-    case pinned = "Pinned"
     case inbox = "Inbox"
+    case pinned = "Pinned"
+    case notes = "Notes"
     case ideas = "Ideas"
     case tasks = "Tasks"
     case readLater = "Read Later"
-    case notes = "Notes"
 
     var id: String { rawValue }
 

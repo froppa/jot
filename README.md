@@ -11,13 +11,15 @@ Fast, local-first capture for ideas, tasks, things to read, and general notes. I
 
 ## Run and install
 
-Requires macOS 14+ and Xcode Command Line Tools.
+Requires macOS 14+, Xcode, and [mise](https://mise.jdx.dev/). Install mise with `brew install mise`, then verify the Xcode toolchain and run the app:
 
 ```sh
-swift test
-scripts/build-app.sh
-open .build/Jot.app
+make setup
+make test
+make run
 ```
+
+`make help` lists the available commands. The underlying mise tasks are also available directly, for example `mise run build`. Jot intentionally uses Xcode’s Swift toolchain because SwiftData is an Apple framework, not mise’s standalone Swift runtime. Project tasks do not auto-install unrelated tools from your global mise configuration.
 
 To keep it, drag `.build/Jot.app` into your Applications folder. The first release is intentionally unsigned; macOS may require you to open it from Finder with **Open**. Signed/notarized distribution belongs in a GitHub Release once there is a Developer ID certificate.
 

@@ -1,6 +1,8 @@
 .DS_Store
 .build/
+.mise.local.toml
 ShelfNote.app/
 *.jpeg
 *.png
+!Resources/JotIcon.png
 design-qa.md
