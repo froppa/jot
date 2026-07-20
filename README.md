@@ -16,12 +16,12 @@ Requires macOS 14+, Xcode, and [mise](https://mise.jdx.dev/). Install mise with 
 ```sh
 make setup
 make test
-make run
+make install
 ```
 
-`make help` lists the available commands. The underlying mise tasks are also available directly, for example `mise run build`. Jot intentionally uses Xcode’s Swift toolchain because SwiftData is an Apple framework, not mise’s standalone Swift runtime. Project tasks do not auto-install unrelated tools from your global mise configuration.
+`make install` builds Jot, installs it in `/Applications`, and opens it. `make help` lists the available commands. The underlying mise tasks are also available directly, for example `mise run build`. Jot intentionally uses Xcode’s Swift toolchain because SwiftData is an Apple framework, not mise’s standalone Swift runtime. Project tasks do not auto-install unrelated tools from your global mise configuration.
 
-To keep it, drag `.build/Jot.app` into your Applications folder. The first release is intentionally unsigned; macOS may require you to open it from Finder with **Open**. Signed/notarized distribution belongs in a GitHub Release once there is a Developer ID certificate.
+The first release is intentionally unsigned; macOS may require you to open it from Finder with **Open**. Signed/notarized distribution belongs in a GitHub Release once there is a Developer ID certificate.
 
 ## Enable iCloud sync
 

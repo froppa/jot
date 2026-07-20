@@ -94,8 +94,14 @@ struct JotView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Jot")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+            HStack(spacing: 10) {
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable()
+                    .frame(width: 34, height: 34)
+                    .accessibilityHidden(true)
+                Text("Jot")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+            }
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
