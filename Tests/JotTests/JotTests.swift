@@ -26,10 +26,11 @@ final class JotTests: XCTestCase {
         XCTAssertTrue(note.isPinned)
     }
 
-    func testSingleLineNoteHasNoPlaceholderPreview() {
-        let note = Note(text: "A complete note", project: Project.inbox.rawValue)
+    func testMarkdownFormattingPreservesSource() {
+        let source = "**Important** and *soon*"
+        let note = Note(text: source, project: Project.inbox.rawValue)
 
-        XCTAssertEqual(note.title, "A complete note")
-        XCTAssertEqual(note.preview, "")
+        XCTAssertEqual(note.text, source)
+        XCTAssertEqual(String(note.formattedText.characters), "Important and soon")
     }
 }

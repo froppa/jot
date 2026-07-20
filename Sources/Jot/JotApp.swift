@@ -192,22 +192,43 @@ struct JotView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            TextField("Write a note…", text: $draft, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineLimit(1...4)
-                .font(.title3)
-                .focused($isCaptureFocused)
-
-            Button(action: addNote) {
-                Label("Capture", systemImage: "tray.and.arrow.down")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Quick capture", systemImage: "bolt.fill")
+                    .font(.headline)
+                    .foregroundStyle(.tint)
+                Spacer()
+                Text("Markdown · ⌘↩")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
-            .keyboardShortcut(.return, modifiers: [.command])
-            .buttonStyle(.borderedProminent)
-            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            HStack(alignment: .bottom, spacing: 12) {
+                TextField("Write a note…", text: $draft, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...4)
+                    .font(.title3)
+                    .focused($isCaptureFocused)
+                    .padding(12)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 10))
+
+                Button(action: addNote) {
+                    Label("Capture", systemImage: "tray.and.arrow.down.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 6)
+                }
+                .keyboardShortcut(.return, modifiers: [.command])
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
         }
-        .padding(18)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16))
+        .padding(20)
+        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.accentColor.opacity(0.35), lineWidth: 1.5)
+        }
     }
 
     private func addNote() {
@@ -313,15 +334,10 @@ private struct NoteCard: View {
                 .menuStyle(.borderlessButton)
             }
 
-            Text(note.title)
-                .font(.title3.weight(.bold))
-                .lineLimit(2)
-            if !note.preview.isEmpty {
-                Text(note.preview)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            Text(note.formattedText)
+                .lineLimit(8)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack {
                 if let reminder = note.reminderAt {
@@ -372,6 +388,7 @@ private struct EditNoteSheet: View {
             TextField("Write a note", text: $text, axis: .vertical)
                 .lineLimit(5...12)
                 .textFieldStyle(.roundedBorder)
+                .font(.body.monospaced())
 
             Picker("Category", selection: $project) {
                 ForEach(Project.allCases.filter(\.canCreateNotes)) { option in

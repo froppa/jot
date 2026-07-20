@@ -38,6 +38,13 @@ final class Note {
         guard lines.count > 1 else { return "" }
         return String(lines.dropFirst().joined(separator: " ").prefix(110))
     }
+
+    var formattedText: AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace
+        )
+        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+    }
 }
 
 enum NoteColor: String, CaseIterable, Identifiable {
