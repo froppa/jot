@@ -4,6 +4,8 @@ A small native macOS app for capturing notes without an account or network
 connection. Write something down, sort it into a category, and pin the notes
 you want to keep visible.
 
+![Jot showing sample notes in the Inbox](docs/screenshot.png)
+
 ## What it does
 
 - Stores notes locally with SwiftData.
