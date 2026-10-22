@@ -1,45 +1,48 @@
 # Jot
 
-Fast, local-first capture for ideas, tasks, things to read, and general notes. It is a small native macOS app: type a thought, put it in a simple bucket, pin the few things that should stay visible, and get back to work.
+A small native macOS app for capturing notes without an account or network
+connection. Write something down, sort it into a category, and pin the notes
+you want to keep visible.
+
+![Jot showing sample notes in the Inbox](docs/screenshot.png)
 
 ## What it does
 
-- Captures **Ideas**, **Tasks**, **Read Later**, and **Notes** locally with SwiftData.
-- Keeps a pinned shelf for the important few.
-- Searches notes and schedules optional local reminders.
-- Works without an account or network connection.
+- Stores notes locally with SwiftData.
+- Groups them into Inbox, Notes, Ideas, Tasks, and Read Later.
+- Supports editing, search within a category, and a pinned shelf.
+- Displays inline Markdown formatting while keeping the original text.
 
-## Run and install
+## Build and run
 
-Requires macOS 14+, Xcode, and [mise](https://mise.jdx.dev/). Install mise with `brew install mise`, then verify the Xcode toolchain and run the app:
+Requires macOS 14+, Xcode, and [mise](https://mise.jdx.dev/).
+Jot uses Xcode's Swift toolchain for SwiftUI and SwiftData.
 
 ```sh
 make setup
 make test
-make install
+make run
 ```
 
-`make install` builds Jot, installs it in `/Applications`, and opens it. `make help` lists the available commands. The underlying mise tasks are also available directly, for example `mise run build`. Jot intentionally uses Xcode’s Swift toolchain because SwiftData is an Apple framework, not mise’s standalone Swift runtime. Project tasks do not auto-install unrelated tools from your global mise configuration.
+`make run` builds `.build/Jot.app` and opens it. To install the app in
+`/Applications` instead, run `make install`. `make help` lists the commands.
 
-The first release is intentionally unsigned; macOS may require you to open it from Finder with **Open**. Signed/notarized distribution belongs in a GitHub Release once there is a Developer ID certificate.
+The build script creates an app bundle without a signing or notarization step.
+There is no signed release download yet.
 
-## Enable iCloud sync
+## Current limits
 
-This package intentionally starts with local storage so it can run without a signed Apple Developer identity. iCloud sync needs a real App ID and CloudKit container owned by your team.
+Storage is local only. iCloud sync, export, and a UI for scheduling reminders
+are not implemented. The reminder model and scheduler are groundwork rather
+than a usable feature.
 
-1. Open `Package.swift` in Xcode and give the app target a unique bundle identifier.
-2. In **Signing & Capabilities**, add **iCloud** and **CloudKit**; create/select a container such as `iCloud.com.yourteam.Jot`.
-3. Replace the placeholder container in `Resources/Jot.entitlements` and attach it to the target.
-4. In `JotApp.swift`, replace `ModelConfiguration(cloudKitDatabase: .none)` with:
+There is no in-app backup or restore. Keep that in mind before using Jot as the
+only copy of important notes.
 
-   ```swift
-   ModelConfiguration(cloudKitDatabase: .private("iCloud.com.yourteam.Jot"))
-   ```
+## Code
 
-5. Run signed builds on devices using the same iCloud account.
+`Sources/Jot/JotApp.swift` contains the interface, `Note.swift` defines the data
+model and category queries, and `Tests/JotTests` covers query ordering, note
+identity, and Markdown rendering. `scripts/build-app.sh` assembles the app bundle.
 
-iCloud synchronizes the store; it is not a versioned backup. Add Markdown/JSON export before relying on it for irreplaceable notes.
-
-## Repository status
-
-This repository is private while the app is being shaped. No license is included yet; all rights are reserved. Before open-sourcing, add a license, remove any personal iCloud container identifiers, and decide how releases will be signed.
+Licensed under the [MIT License](LICENSE).
