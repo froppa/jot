@@ -1,5 +1,6 @@
 .DS_Store
 .build/
+.swiftpm/
 .mise.local.toml
 ShelfNote.app/
 *.jpeg
